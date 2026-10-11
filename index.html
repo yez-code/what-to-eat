@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今天吃什麼？</title>
+    <style>
+        /* ================= 視覺與色彩設定 ================= */
+        :root {
+            --bg-color: #f7f4ee;       /* 溫暖米白底色 */
+            --card-bg: #ffffff;        /* 卡片白 */
+            --primary-color: #8c9c8a;  /* 莫蘭迪綠 (按鈕主色) */
+            --primary-hover: #768674;  /* 莫蘭迪綠加深 */
+            --text-main: #5c544d;      /* 大地棕 (主要文字) */
+            --text-light: #8e8780;     /* 淺棕色 (次要文字) */
+            --btn-text: #ffffff;       /* 按鈕文字 */
+            --shadow: 0 10px 30px rgba(92, 84, 77, 0.08);
+            --border-radius: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; /* 防止動畫時出現捲軸 */
+        }
+
+        /* 遊戲主容器 */
+        #game-container {
+            background-color: var(--card-bg);
+            width: 90%;
+            max-width: 500px;
+            padding: 40px 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            position: relative;
+            min-height: 450px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* ================= 標題與文字 ================= */
+        h1, h2 {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+
+        p {
+            color: var(--text-light);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        /* ================= 按鈕樣式 ================= */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
+
+        button {
+            background-color: var(--card-bg);
+            color: var(--text-main);
+            border: 2px solid var(--primary-color);
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: var(--primary-color);
+            color: var(--btn-text);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(140, 156, 138, 0.3);
+        }
+
+        button.action-btn {
+            background-color: var(--primary-color);
+            color: var(--btn-text);
+            margin-top: 15px;
+        }
+        
+        button.action-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button.secondary-btn {
+            background-color: transparent;
+            border: none;
+            color: var(--text-light);
+            text-decoration: underline;
+            margin-top: 10px;
+            padding: 10px;
+        }
+        
+        button.secondary-btn:hover {
+            color: var(--text-main);
+            background-color: transparent;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* ================= 結果頁面圖片區塊 ================= */
+        .result-image-box {
+            width: 100%;
+            height: 200px;
+            background-color: #f0f0f0;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .result-image-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 讓圖片自動裁切填滿 */
+        }
+
+        /* ================= 動畫效果 (平滑淡入淡出滑動) ================= */
+        .fade-out {
+            animation: slideOutLeft 0.4s forwards cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fade-in {
+            animation: slideInRight 0.4s forwards cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideOutLeft {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(-30px); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* 區塊顯示控制 */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container" class="fade-in">
+        <!-- 問答區塊 -->
+        <div id="question-section">
+            <h2 id="question-title">載入中...</h2>
+            <div id="options-area" class="options-container">
+                <!-- 選項會透過 JS 動態產生在這裡 -->
+            </div>
+        </div>
+
+        <!-- 結果區塊 -->
+        <div id="result-section" class="hidden">
+            <div class="result-image-box">
+                <!-- 預設提供一張佔位圖，您可以在 JS 設定中替換為真實圖片路徑 -->
+                <img id="result-image" src="" alt="食物示意圖">
+            </div>
+            <h1 id="result-title">結果標題</h1>
+            <p id="result-desc">結果敘述說明會顯示在這裡。</p>
+            
+            <div id="result-actions" class="options-container">
+                <button id="random-btn" class="action-btn">🎲 還是不想吃這個？讓宇宙決定！</button>
+                <button id="restart-btn" class="secondary-btn">↺ 重新開始測驗</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= 1. 資料庫 (題目與結果設定) =================
+        // 您可以在這邊替換 image 的網址，放上您自己找的圖片連結 (可以是相對路徑如 'img/poke.jpg' 或網址 'https://...')
+        const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=600&q=80'; // 咖啡廳風格預設圖
+
+        const gameData = {
+            // ----- 題目節點 -----
+            q_budget: {
+                type: 'question',
+                text: '今天的餐費預算如何？',
+                options: [
+                    { text: '預算充足，想吃什麼就吃什麼！', next: 'q_meal' },
+                    { text: '月底了...想省點錢', next: 'r_friendly' }
+                ]
+            },
+            q_meal: {
+                type: 'question',
+                text: '現在想尋找哪一餐的靈感？',
+                options: [
+                    { text: '早餐', next: 'q_bf_style' },
+                    { text: '午餐', next: 'q_lun_type' },
+                    { text: '晚餐', next: 'q_din_style' }
+                ]
+            },
+            // [早餐樹]
+            q_bf_style: {
+                type: 'question',
+                text: '早晨想來點台式還是西式？',
+                options: [
+                    { text: '台式', next: 'q_bf_tw' },
+                    { text: '西式', next: 'q_bf_west' }
+                ]
+            },
+            q_bf_tw: {
+                type: 'question',
+                text: '想吃飯、麵，還是餅？',
+                options: [
+                    { text: '飯', next: 'r_bf_rice' },
+                    { text: '麵', next: 'r_bf_noodle' },
+                    { text: '餅', next: 'r_bf_crepe' }
+                ]
+            },
+            q_bf_west: {
+                type: 'question',
+                text: '想要麵包還是生菜？',
+                options: [
+                    { text: '麵包', next: 'r_bf_sandwich' },
+                    { text: '生菜', next: 'r_bf_salad' }
+                ]
+            },
+            // [午餐樹]
+            q_lun_type: {
+                type: 'question',
+                text: '午休時間，想吃飯還是吃麵？',
+                options: [
+                    { text: '吃飯', next: 'q_lun_rice' },
+                    { text: '吃麵', next: 'q_lun_noodle' }
+                ]
+            },
+            q_lun_rice: {
+                type: 'question',
+                text: '想吃多樣配菜，還是一盤搞定？',
+                options: [
+                    { text: '多樣配菜', next: 'r_lun_bento' },
+                    { text: '一盤搞定', next: 'r_lun_curry' }
+                ]
+            },
+            q_lun_noodle: {
+                type: 'question',
+                text: '今天想喝點熱湯嗎？',
+                options: [
+                    { text: '想喝湯', next: 'r_lun_soup' },
+                    { text: '不想喝湯', next: 'r_lun_dry' }
+                ]
+            },
+            // [晚餐樹]
+            q_din_style: {
+                type: 'question',
+                text: '忙了一天，晚餐想吃清淡點，還是放縱一下？',
+                options: [
+                    { text: '清淡無負擔', next: 'q_din_light' },
+                    { text: '放縱大吃', next: 'q_din_heavy' }
+                ]
+            },
+            q_din_light: {
+                type: 'question',
+                text: '想喝熱湯，還是吃大量蔬菜？',
+                options: [
+                    { text: '喝熱湯', next: 'r_din_porridge' },
+                    { text: '吃蔬菜', next: 'r_din_poke' }
+                ]
+            },
+            q_din_heavy: {
+                type: 'question',
+                text: '想大口吃肉，還是豐盛的鍋物？',
+                options: [
+                    { text: '大口吃肉', next: 'r_din_fried' },
+                    { text: '豐盛鍋物', next: 'r_din_hotpot' }
+                ]
+            },
+
+            // ----- 結果節點 -----
+            // (1) 彩蛋
+            r_friendly: {
+                type: 'result',
+                category: 'special',
+                title: '超商友善時光超人 🦸‍♂️',
+                desc: '尋找 65 折標籤吧！拯救錢包也拯救剩食！',
+                image: "images/友善時光超人.png" 
+            },
+            // (2) 早餐結果
+            r_bf_rice: { type: 'result', category: 'breakfast', title: '傳統飯糰', desc: '搭配一杯冰豆漿最讚', image: "images/飯糰.png"},
+            r_bf_noodle: { type: 'result', category: 'breakfast', title: '鐵板麵', desc: '記得加一顆半熟蛋，完美！', image: "images/鐵板麵.png" },
+            r_bf_crepe: { type: 'result', category: 'breakfast', title: '台式蛋餅', desc: '酥脆軟嫩各有擁護者，加點醬油膏吧。', image: "images/蛋餅.png" },
+            r_bf_sandwich: { type: 'result', category: 'breakfast', title: '總匯三明治', desc: '快速方便又美味的經典選擇。', image: "images/三明治.png" },
+            r_bf_salad: { type: 'result', category: 'breakfast', title: '輕食沙拉', desc: '清爽無負擔的早晨，喚醒你的腸胃。', image: "images/沙拉.png" },
+            // (3) 午餐結果
+            r_lun_bento: { type: 'result', category: 'lunch', title: '綜合便當', desc: '有肉有菜，營養均衡的最強選擇。', image: "images/便當.png" },
+            r_lun_curry: { type: 'result', category: 'lunch', title: '香濃咖哩飯', desc: '濃郁醬汁超下飯，一口接一口。', image: "images/咖哩飯.png" },
+            r_lun_soup: { type: 'result', category: 'lunch', title: '熱呼呼的湯麵/牛肉麵', desc: '暖胃首選，喝口湯撫平早上的辛勞。', image: "images/牛肉麵.png" },
+            r_lun_dry: { type: 'result', category: 'lunch', title: '清爽涼麵 / 乾拌麵', desc: '拌一拌快速開吃，簡單又不失美味。', image: "images/乾麵.png"},
+            // (4) 晚餐結果
+            r_din_porridge: { type: 'result', category: 'dinner', title: '鍋燒意麵 / 海鮮粥', desc: '溫和療癒你的胃，洗去一天的疲憊。', image: "images/海鮮粥.png" },
+            r_din_poke: { type: 'result', category: 'dinner', title: '波奇碗 Poke', desc: '健康低卡又繽紛滿點，好吃又好看！', image: "images/poke.png"},
+            r_din_fried: { type: 'result', category: 'dinner', title: '炸雞或美式漢堡', desc: '快樂水配下去就對了！今天值得放縱。', image: "images/炸雞速食.png" },
+            r_din_hotpot: { type: 'result', category: 'dinner', title: '澎湃小火鍋', desc: '肉片、蔬菜、火鍋料，慢慢煮慢慢享受。', image: "images/火鍋.png" }
+        };
+
+        // ================= 2. 核心邏輯控制 =================
+        const container = document.getElementById('game-container');
+        const questionSection = document.getElementById('question-section');
+        const resultSection = document.getElementById('result-section');
+        
+        const qTitle = document.getElementById('question-title');
+        const optionsArea = document.getElementById('options-area');
+        
+        const rImg = document.getElementById('result-image');
+        const rTitle = document.getElementById('result-title');
+        const rDesc = document.getElementById('result-desc');
+        const randomBtn = document.getElementById('random-btn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        let currentCategory = ''; // 紀錄當前的餐期，供盲盒隨機使用
+
+        // 初始化遊戲
+        function initGame() {
+            renderNode('q_budget');
+        }
+
+        // 渲染節點 (切換題目或結果)
+        function renderNode(nodeId) {
+            const nodeData = gameData[nodeId];
+
+            if (nodeData.type === 'question') {
+                // 顯示問題區塊，隱藏結果區塊
+                questionSection.classList.remove('hidden');
+                resultSection.classList.add('hidden');
+                
+                qTitle.textContent = nodeData.text;
+                optionsArea.innerHTML = ''; // 清空選項
+
+                nodeData.options.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.textContent = opt.text;
+                    btn.onclick = () => transitionToNext(opt.next);
+                    optionsArea.appendChild(btn);
+                });
+            } 
+            else if (nodeData.type === 'result') {
+                // 紀錄當前餐期類別
+                currentCategory = nodeData.category;
+
+                // 顯示結果區塊，隱藏問題區塊
+                questionSection.classList.add('hidden');
+                resultSection.classList.remove('hidden');
+
+                // 填入資料
+                rTitle.textContent = nodeData.title;
+                rDesc.textContent = nodeData.desc;
+                rImg.src = nodeData.image;
+
+                // 處理特殊彩蛋的 UI 邏輯
+                if (currentCategory === 'special') {
+                    randomBtn.classList.add('hidden'); // 彩蛋不提供隨機抽換
+                } else {
+                    randomBtn.classList.remove('hidden');
+                }
+            }
+        }
+
+        // 轉場動畫處理
+        function transitionToNext(nextNodeId) {
+            // 加上淡出動畫
+            container.classList.remove('fade-in');
+            container.classList.add('fade-out');
+
+            // 等待淡出動畫結束 (0.4秒) 後更新內容並淡入
+            setTimeout(() => {
+                renderNode(nextNodeId);
+                container.classList.remove('fade-out');
+                container.classList.add('fade-in');
+            }, 400);
+        }
+
+        // ================= 3. 盲盒 / 拉霸機效果 =================
+        randomBtn.onclick = () => {
+            // 收集所有與「當前餐期」相同的食物 ID
+            const candidates = Object.keys(gameData).filter(key => {
+                return gameData[key].type === 'result' && gameData[key].category === currentCategory;
+            });
+
+            if (candidates.length <= 1) return; // 如果只有一個選項就不抽了
+
+            // 拉霸機文字滾動效果
+            let rollCount = 0;
+            const rollMax = 10; // 滾動次數
+            randomBtn.disabled = true;
+            rImg.style.opacity = '0.5';
+
+            const rollInterval = setInterval(() => {
+                const randomId = candidates[Math.floor(Math.random() * candidates.length)];
+                rTitle.textContent = gameData[randomId].title;
+                rDesc.textContent = "宇宙運算中...";
+                rollCount++;
+
+                if (rollCount >= rollMax) {
+                    clearInterval(rollInterval);
+                    // 最終決定 (確保會換成不一樣的，若是隨機到一樣的就重新取)
+                    let finalId = candidates[Math.floor(Math.random() * candidates.length)];
+                    renderNode(finalId);
+                    
+                    rImg.style.opacity = '1';
+                    randomBtn.disabled = false;
+                }
+            }, 100); // 每 0.1 秒變換一次文字
+        };
+
+        // 重新開始
+        restartBtn.onclick = () => {
+            transitionToNext('q_budget');
+        };
+
+        // 啟動遊戲
+        initGame();
+    </script>
+</body>
+</html>
